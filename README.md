@@ -36,3 +36,17 @@ func main() {
 }
 
 ~~~
+
+Some example outputs:
+~~~
+Error reason : Generic
+Error message: test error
+Stack:
+	 _/Users/yunxing/go/src/github.com/yunxing/liberror.TestError
+		 at /Users/yunxing/go/src/github.com/yunxing/liberror/error_test.go:6
+	 testing.tRunner
+		 at /usr/local/go/src/pkg/testing/testing.go:374
+	 runtime.goexit
+		 at /usr/local/go/src/pkg/runtime/proc.c:1394
+
+~~~
