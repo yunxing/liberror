@@ -7,7 +7,7 @@
 //  import "github.com/yunxing/liberror"
 //  import "fmt"
 //
-//  var NetworkFail ErrorType
+//  var NetworkFail liberror.ErrorType
 //
 //  func simulateNetworkFail() liberror.Error {
 //      return New(fmt.Errorf("No network connection"), NetworkFail, nil)
@@ -26,7 +26,7 @@
 //                liberror.DataCorruption, "/disk/a/report")
 //      fmt.Println(err)
 //
-//      // You can also compare an error by:
+//      // You can also compare two errors by:
 //      if err.ErrorType == liberror.DataCorruption {
 //          // Get more info from the error
 //          fmt.Println(err.info)
