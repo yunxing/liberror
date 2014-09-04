@@ -4,8 +4,6 @@ import "runtime"
 import "fmt"
 import "bytes"
 
-type StackTrace []*runtime.Func
-
 var (
 	errorTypeNames []string       = make([]string, 0, 64)
 	in             chan string    = make(chan string)
@@ -18,6 +16,8 @@ func (t ErrorType) String() string {
 	return errorTypeNames[t]
 }
 
+// Predefined errors. These errors are designed to be as generic
+// as possible to hide implementation details.
 var (
 	Generic              ErrorType
 	NotFound             ErrorType
@@ -30,14 +30,24 @@ var (
 	FileSystem           ErrorType
 )
 
+// RegisterError defines a client's own generic error type.
+// It takes a string as a description of this error and
+// returns a unique type id for that type.
 func RegisterError(typeName string) ErrorType {
 	in <- typeName
 	return <-out
 }
 
 func handleRegister() {
+loop:
 	for {
 		name := <-in
+		for i, n := range errorTypeNames {
+			if n == name {
+				out <- ErrorType(i)
+				continue loop
+			}
+		}
 		errorTypeNames = append(errorTypeNames, name)
 		out <- ErrorType(len(errorTypeNames) - 1)
 	}
@@ -57,42 +67,30 @@ func init() {
 }
 
 type Error struct {
-	err       error
-	trace     *StackTrace
-	errorType ErrorType
-	info      interface{}
+	Err       error
+	Trace     []*runtime.Func
+	ErrorType ErrorType
+	Info      interface{}
 }
 
 func New(err error, errorType ErrorType, userInfo interface{}) Error {
 	stack := make([]uintptr, 1024)
 	n := runtime.Callers(2, stack)
-	trace := make(StackTrace, 0, n)
+	trace := make([]*runtime.Func, 0, n)
 	for _, pc := range stack {
 		if f := runtime.FuncForPC(pc); f != nil {
 			trace = append(trace, f)
 		}
 	}
-	return Error{err, &trace, errorType, userInfo}
-}
-
-func (e Error) Type() ErrorType {
-	return e.errorType
-}
-
-func (e Error) StackTrace() *StackTrace {
-	return e.trace
-}
-
-func (e Error) Info() interface{} {
-	return e.info
+	return Error{err, trace, errorType, userInfo}
 }
 
 func (e Error) Error() string {
 	bs := bytes.NewBufferString("")
 	bs.WriteString(fmt.Sprintf("Error reason : %s\nError message: %s \n",
-		errorTypeNames[e.errorType], e.err.Error()))
+		errorTypeNames[e.ErrorType], e.Err.Error()))
 	bs.WriteString("Stack: \n")
-	for _, f := range *e.trace {
+	for _, f := range e.Trace {
 		file, line := f.FileLine(f.Entry())
 		bs.WriteString(fmt.Sprintf("\t %s\n\t\t at %s:%d\n",
 			f.Name(), file, line))
